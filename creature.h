@@ -103,6 +103,15 @@ void creature_generate(struct creature *creature);
 
 
 
+struct combat_report {
+	int damage;
+};
+
+struct combat_report
+combat_perform(struct creature *att, unsigned long act, struct creature *def);
+
+
+
 struct creature_node {
 	int x, y;
 	struct creature creature;

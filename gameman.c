@@ -11,7 +11,7 @@
 #include "term.h"
 
 struct dungeon *curdun = NULL;
-int curlvl = 0;
+int curlvl = -1;
 
 int px = 0;
 int py = 0;
@@ -42,15 +42,11 @@ void gm_connect_shell(struct shell *sh)
 	shell_add_cmd(sh, "act", gm_act);
 	shell_add_cmd(sh, "update", gm_update);
 	shell_add_cmd(sh, "dungeon", gm_dungeon);
-
-	/*shell_exec_line(sh, "map h \"move left\"");
-	shell_exec_line(sh, "map j \"move down\"");
-	shell_exec_line(sh, "map k \"move up\"");
-	shell_exec_line(sh, "map l \"move right\"");*/
 }
 
 static void gm_descend(void)
 {
+	curlvl++;
 	dungeon_set_level(curdun, curlvl);
 	dungeon_generate(curdun);
 	dungeon_populate(curdun);
@@ -63,21 +59,21 @@ static void gm_draw(void)
 	int x, y;
 	struct creature_node *iter;
 	struct creature_list *cl;
-	
+
 	for (x = 0; x < dungeon_width(curdun); ++x) {
 		for (y = 0; y < dungeon_height(curdun); ++y) {
 			glyph_draw(x, y,
 				tile_glyph(*dungeon_tile_at(curdun, x, y)));
 		}
 	}
-	
+
 	cl = dungeon_creature_list(curdun);
 
 	for (cl_begin(cl); !cl_end(cl); cl_next(cl)) {
 		iter = cl_iter(cl);
 		glyph_draw(iter->x, iter->y, iter->creature.glyph);
 	}
-	
+
 
 	glyph_draw(px, py, glyph_create('@'));
 
@@ -121,20 +117,40 @@ static int gm_move(struct shell *sh, int ac, char *av[])
 
 static int gm_act(struct shell *sh, int ac, char *av[])
 {
+	int dx = 0;
+	int dy = 0;
+	int dir;
 	int act_no;
 	char *tmp;
-	
-	if (ac <= 1) {
-		shell_puts(sh, "usage: act <action_no> <direction?>\n");
+
+	if (ac <= 2) {
+		shell_puts(sh, "usage: act <action_no> <direction>\n");
 		return SHELL_SUCCESS;
 	}
-	
+
 	act_no = strtol(av[1], &tmp, 10);
-	
+
 	if (tmp == av[1]) {
 		shell_printf(sh, "error: %s is not an integer\n", av[1]);
 		return SHELL_SUCCESS;
 	}
+
+	/* Special case, action 0 is always move. */
+	if (act_no == 0) {
+		shell_exec_linef(sh, "move %s", av[2]);
+		return SHELL_SUCCESS;
+	}
+
+	dir = dir_from_name(av[2]);
+
+	if (dir == DIR_NONE) {
+		shell_printf(sh, "error: %s is not a direction\n", av[2]);
+		return SHELL_SUCCESS;
+	}
+
+	dir_delta(dir, &dx, &dy);
+
+	/* TODO: Deal with act_no */
 
 	return SHELL_SUCCESS;
 }
@@ -144,7 +160,7 @@ static int gm_update(struct shell *sh, int ac, char *av[])
 {
 	struct creature_node *iter;
 	struct creature_list *cl;
-	
+
 	cl = dungeon_creature_list(curdun);
 
 	for (cl_begin(cl); !cl_end(cl); cl_next(cl)) {

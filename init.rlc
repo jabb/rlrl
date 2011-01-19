@@ -9,3 +9,5 @@ map j "move down"
 map k "move up"
 map l "move right"
 
+# This will map actions.
+# map 1 "unmap h" "unmap j" "unmap k" "unmap l"

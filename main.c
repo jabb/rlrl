@@ -1,9 +1,9 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
 #include "gameman.h"
+#include "rand.h"
 #include "shell.h"
 #include "term.h"
 
@@ -28,8 +28,6 @@ char *mystrdup(const char *s)
 
 char *keybinds[NUM_KEYBINDS] = {0};
 
-unsigned long seed;
-
 int main_init(void);
 void main_exit(int code);
 
@@ -37,7 +35,7 @@ int sh_map(struct shell *sh, int ac, char *av[]);
 int sh_unmap(struct shell *sh, int ac, char *av[]);
 int sh_commands(struct shell *sh, int ac, char *av[]);
 int sh_quit(struct shell *sh, int ac, char *av[]);
-int sh_seed(struct shell *sh, int ac, char *av[]);
+int sh_rand(struct shell *sh, int ac, char *av[]);
 
 int main(void)
 {
@@ -49,13 +47,11 @@ int main(void)
 	shell_add_cmd(sh, "unmap", sh_unmap);
 	shell_add_cmd(sh, "commands", sh_commands);
 	shell_add_cmd(sh, "quit", sh_quit);
-	shell_add_cmd(sh, "seed", sh_seed);
+	shell_add_cmd(sh, "rand", sh_rand);
 
 	shell_exec_line(sh, "map ` sh");
-	/*shell_exec_line(sh, "map ? commands");
-	shell_exec_line(sh, "map Q \"quit -p\"");*/
 
-	shell_exec_line(sh, "run init.rlc");
+	shell_exec_line(sh, "runfile init.rlc");
 
 	gm_connect_shell(sh);
 
@@ -81,8 +77,7 @@ int main_init(void)
 
 	shell_add_default_cmds(sh);
 
-	seed = (unsigned)time(NULL);
-	srand(seed);
+	rand_init_time();
 
 	return 0;
 }
@@ -126,7 +121,7 @@ int sh_map(struct shell *sh, int ac, char *av[])
 int sh_unmap(struct shell *sh, int ac, char *av[])
 {
 	if (ac != 2) {
-		shell_puts(sh, "usage: unmap <char>");
+		shell_puts(sh, "usage: unmap <char>\n");
 		shell_flush(sh);
 		return SHELL_SUCCESS;
 	}
@@ -186,9 +181,48 @@ int sh_quit(struct shell *sh, int ac, char *av[])
 	return SHELL_SUCCESS;
 }
 
-int sh_seed(struct shell *sh, int ac, char *av[])
+int sh_rand(struct shell *sh, int ac, char *av[])
 {
-	shell_printf(sh, "random seed: %lu\n", seed);
+	int lo, hi;
+	char *tmp;
+
+	if (ac < 2) {
+		shell_puts(sh, "usage: rand <seed|int|double|range>\n");
+		return SHELL_SUCCESS;
+	}
+
+	if (strcmp("seed", av[1]) == 0) {
+		shell_printf(sh, "%lu\n", rand_seed());
+	}
+	else if (strcmp("int", av[1]) == 0) {
+		shell_printf(sh, "%lu\n", rand_int());
+	}
+	else if (strcmp("double", av[1]) == 0) {
+		shell_printf(sh, "%lf\n", rand_double());
+	}
+	else if (strcmp("range", av[1]) == 0) {
+		if (ac != 4) {
+			shell_puts(sh, "usage: rand range <lo> <hi>\n");
+			return SHELL_SUCCESS;
+		}
+
+		lo = strtol(av[2], &tmp, 10);
+		if (av[2] == tmp) {
+			shell_puts(sh, "usage: rand range <lo> <hi>\n");
+			return SHELL_SUCCESS;
+		}
+
+		hi = strtol(av[3], &tmp, 10);
+		if (av[3] == tmp) {
+			shell_puts(sh, "usage: rand range <lo> <hi>\n");
+			return SHELL_SUCCESS;
+		}
+
+		shell_printf(sh, "%lu\n", rand_range(lo, hi));
+	}
+	else {
+		shell_puts(sh, "usage: rand <seed|int|double|range>\n");
+	}
 	return SHELL_SUCCESS;
 }
 

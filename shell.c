@@ -9,7 +9,7 @@
 #include "term.h"
 
 #define PROMPT		"> "
-#define PROMPT_LEN	((int)strlen(PROMPT))
+#define PROMPT_LEN	(strlen(PROMPT))
 
 #define PROMPT_X(sh)	((sh)->x)
 #define PROMPT_Y(sh)	((sh)->y + (sh)->h - 1)
@@ -252,7 +252,7 @@ static int cmd_pause(struct shell *sh, int ac, char *av[])
 	return SHELL_SUCCESS;
 }
 
-static int cmd_run(struct shell *sh, int ac, char *av[])
+static int cmd_runfile(struct shell *sh, int ac, char *av[])
 {
 	char buf[BUFSIZ];
 	FILE *fin;
@@ -283,6 +283,19 @@ static int cmd_run(struct shell *sh, int ac, char *av[])
 	}
 
 	fclose(fin);
+
+	return SHELL_SUCCESS;
+}
+
+static int cmd_runcmds(struct shell *sh, int ac, char *av[])
+{
+	int i;
+
+	for (i = 1; i < ac; ++i) {
+		if (shell_exec_linef(sh, "%s", av[i]) == SHELL_FAILURE) {
+			shell_printf(sh, "error: '%s' failed\n", av[i]);
+		}
+	}
 
 	return SHELL_SUCCESS;
 }
@@ -524,7 +537,8 @@ int shell_add_default_cmds(struct shell *sh)
 	shell_add_cmd(sh, "exit", cmd_exit);
 	shell_add_cmd(sh, "echo", cmd_echo);
 	shell_add_cmd(sh, "pause", cmd_pause);
-	shell_add_cmd(sh, "run", cmd_run);
+	shell_add_cmd(sh, "runfile", cmd_runfile);
+	shell_add_cmd(sh, "runcmds", cmd_runcmds);
 	shell_add_cmd(sh, "list", cmd_list);
 	shell_add_cmd(sh, "sh", cmd_sh);
 	return SHELL_SUCCESS;

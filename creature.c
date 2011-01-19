@@ -172,6 +172,20 @@ unsigned long act_effect(unsigned long act)
 
 void creature_generate(struct creature *creature)
 {
+	/* Action 0 is ALWAYS move. */
+	creature->actions[0] = ACT_MOVE;
+}
+
+/******************************************************************************\
+ * Combat
+\******************************************************************************/
+
+struct combat_report
+combat_perform(struct creature *att, unsigned long act, struct creature *def)
+{
+	struct combat_report cr;
+
+	return cr;
 }
 
 /******************************************************************************\
