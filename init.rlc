@@ -1,0 +1,11 @@
+
+# Basic keybinds
+map ? commands
+map Q "quit -p"
+
+# Movement keybinds
+map h "move left"
+map j "move down"
+map k "move up"
+map l "move right"
+
