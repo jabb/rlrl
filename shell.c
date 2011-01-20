@@ -217,11 +217,12 @@ static int cmd_sh(struct shell *sh, int ac, char *av[])
 	(void)ac;
 	(void)av;
 
-	shell_enter(sh);
+	if (!sh->entered)
+		shell_enter(sh);
 	return SHELL_SUCCESS;
 }
 
-static int cmd_list(struct shell *sh, int ac, char *av[])
+static int cmd_help(struct shell *sh, int ac, char *av[])
 {
 	int lines;
 	struct cmd *head = sh->cmds;
@@ -458,7 +459,7 @@ int shell_add_default_cmds(struct shell *sh)
 	shell_add_cmd(sh, "pause", cmd_pause);
 	shell_add_cmd(sh, "runfile", cmd_runfile);
 	shell_add_cmd(sh, "runcmds", cmd_runcmds);
-	shell_add_cmd(sh, "list", cmd_list);
+	shell_add_cmd(sh, "help", cmd_help);
 	shell_add_cmd(sh, "sh", cmd_sh);
 	return SHELL_SUCCESS;
 }
@@ -533,6 +534,8 @@ int shell_enter(struct shell *sh)
 
 		shell_flush(sh);
 	} while (sh->entered);
+
+	sh->entered = 0;
 
 	return SHELL_SUCCESS;
 }

@@ -91,7 +91,7 @@ void main_exit(int code)
 	for (i = 0; i < NUM_KEYBINDS; ++i)
 		free(keybinds[i]);
 
-	exit(0);
+	exit(code);
 }
 
 int sh_map(struct shell *sh, int ac, char *av[])

@@ -1,5 +1,5 @@
 
-#ifndef TERM_CURSES
+#if !defined(TERM_CURSES)
 
 #include "term.h"
 
