@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "cmdline.h"
 #include "term.h"
 
 #define PROMPT		"> "
@@ -106,98 +107,6 @@ static void clearbuf(struct shell *sh)
 	}
 	sh->wr_row = 0;
 	sh->wr_col = 0;
-}
-
-static void freeargs(int *argc, char ***argv)
-{
-	int i;
-	if (*argv) {
-		for (i = 0; i < *argc; ++i)
-			free((*argv)[i]);
-	}
-	free(*argv);
-	*argv = NULL;
-	*argc = 0;
-}
-
-static int getargs(const char *str, int *argc, char ***argv)
-{
-	int maxlen = strlen(str) + 1;
-	int maxargs = 0;
-	int i, j;
-	int was_space = 0;
-	int in_quotes = 0;
-
-	for (i = 0; str[i]; ++i) {
-		if (isspace(str[i]) && !in_quotes) {
-			if (!was_space)
-				maxargs++;
-			was_space = 1;
-		}
-		else if (str[i] == '"') {
-			in_quotes = !in_quotes;
-			was_space = 0;
-
-			if (!in_quotes) {
-				maxargs++;
-				was_space = 1;
-			}
-		}
-		else {
-			was_space = 0;
-		}
-	}
-
-	/* If a quote was left un-closed */
-	if (in_quotes || !was_space)
-		maxargs++;
-
-	*argv = calloc(maxargs, sizeof(char *));
-
-	if (!*argv)
-		goto failure;
-
-	for (i = 0; i < maxargs; ++i) {
-		(*argv)[i] = calloc(maxlen, sizeof(char));
-		if (!(*argv)[i])
-			goto failure;
-	}
-
-	in_quotes = 0;
-	was_space = 1;
-	i = 0;
-	j = 0;
-	while (*str) {
-		if (*str == ' ' && !in_quotes) {
-			if (!was_space) {
-				j = 0;
-				i++;
-			}
-			was_space = 1;
-		}
-		else if (*str == '"') {
-			in_quotes = !in_quotes;
-			was_space = 0;
-
-			if (!in_quotes) {
-				j = 0;
-				i++;
-				was_space = 1;
-			}
-		}
-		else {
-			was_space = 0;
-			(*argv)[i][j] = *str;
-			j++;
-		}
-		str++;
-	}
-
-	*argc = maxargs;
-	return SHELL_SUCCESS;
-failure:
-	freeargs(argc, argv);
-	return SHELL_NO_MEM;
 }
 
 /******************************************************************************\
@@ -566,19 +475,18 @@ int shell_exec(struct shell *sh, const char *name, int ac, char *av[])
 int shell_exec_line(struct shell *sh, const char *line)
 {
 	int rv;
-	int argc;
-	char **argv;
+	struct cmdline_args *args;
 
-	rv = getargs(line, &argc, &argv);
-	if (rv != SHELL_SUCCESS)
-		return rv;
+	args = cmdline_parse(line);
+	if (!args)
+		return SHELL_FAILURE;
 
-	rv = shell_exec(sh, argv[0], argc, argv);
+	rv = shell_exec(sh, args->argv[0], args->argc, args->argv);
 
 	if (rv == SHELL_NOT_FOUND)
-		shell_printf(sh, "%s: no such command\n", argv[0]);
+		shell_printf(sh, "%s: no such command\n", args->argv[0]);
 
-	freeargs(&argc, &argv);
+	cmdline_free(args);
 
 	return rv;
 }

@@ -7,7 +7,7 @@ struct cmdline_args {
 	char *argv[];
 };
 
-int cmdline_parse(struct cmdline_args *args, const char *str);
+struct cmdline_args *cmdline_parse(const char *str);
 void cmdline_free(struct cmdline_args *args);
 
 #endif

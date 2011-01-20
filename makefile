@@ -8,7 +8,7 @@ CFILES = main.c \
 OBJECTS = $(CFILES:.c=.o)
 BINARY = rlrl
 
-all: $(CFILES) $(BINARY)
+all: $(BINARY)
 
 $(BINARY): $(OBJECTS)
 	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
