@@ -4,7 +4,7 @@ LDFLAGS = -lm
 CFILES = main.c \
 	term.c shell.c gameman.c glyph.c \
 	dungeon.c creature.c \
-	mt19937ar.c rand.c
+	mt19937ar.c rand.c cmdline.c
 OBJECTS = $(CFILES:.c=.o)
 BINARY = rlrl
 
