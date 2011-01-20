@@ -54,6 +54,8 @@ int main(void)
 
 	gm_connect_shell(sh);
 
+	shell_printf(sh, "Welcome to RLRL! Press ` to enter the shell.\n");
+
 	shell_flush(sh);
 	do {
 		if (ch >= 0 && ch < NUM_KEYBINDS && keybinds[ch]) {

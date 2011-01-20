@@ -12,5 +12,5 @@ map l "move right"
 map . update
 map r "rand range 1 6"
 
-# This will map actions.
+# This will map actions. "act 0" is always move.
 map 0 [runcmds [echo "Switching to action 0!"] [unmap h] [unmap j] [unmap k] [unmap l] [map h "act 0 left"] [map j "act 0 down"] [map k "act 0 up"] [map l "act 0 right"]]

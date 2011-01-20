@@ -1,0 +1,19 @@
+
+RLRL (Real Lite Roguelike) is a Roguelike game which focuses mainly on combat,
+and little else. Combat is state-based: every creature has a state it's
+currently in. Every creature also has actions. Each action can sometimes
+require you and your target to be in specific states.
+
+The interaction is done via a shell. You can map keypresses to a shell command
+with the `map` command. Type `help` to get a list of commands. You can also
+take a look at init.rlc, the startup script.
+
+One of RLRL's goals is to be lightweight (obviously) and you can choose to build
+rlrl with or without curses, although the without curses build may be glitchy on
+some terminals (I suggest rxvt or xterm!).
+
+Without curses:
+make clean; make
+
+With curses:
+make clean; make curses
