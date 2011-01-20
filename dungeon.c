@@ -1,6 +1,7 @@
 
 #include "dungeon.h"
 
+#include "rand.h"
 #include "term.h"
 
 /******************************************************************************\
@@ -52,7 +53,7 @@ void dir_delta(int dir, int *x, int *y)
 {
 	if (x) *x = 0;
 	if (y) *y = 0;
-	
+
 	switch (dir) {
 	case DIR_UP:
 		if (y)
@@ -212,7 +213,7 @@ int dungeon_get_level(struct dungeon *dun)
 void dungeon_generate(struct dungeon *dun)
 {
 	int x, y;
-	
+
 	/* Fill with walls. */
 	for (x = 0; x < dun->width; ++x)
 		for (y = 0; y < dun->height; ++y)
@@ -236,11 +237,11 @@ void dungeon_populate(struct dungeon *dun)
 		cl_del(dun->list, cl_iter(dun->list));
 		cl_destroy_node(tmp);
 	}
-	
+
 	for (i = 0; i < cnum; ++i) {
 		tmp = cl_create_node();
-		tmp->x = rand() % dun->width;
-		tmp->y = rand() % dun->height;
+		tmp->x = rand_range(1, dun->width - 1);
+		tmp->y = rand_range(1, dun->height - 1);
 		tmp->creature.glyph.sym = 'M';
 		tmp->creature.glyph.fg = TERM_RED;
 		tmp->creature.glyph.bg = TERM_BLACK;
@@ -282,7 +283,7 @@ int dungeon_walkable(struct dungeon *dun, int x, int y)
 
 	if (dungeon_creature_at(dun, x, y))
 		return 0;
-	
+
 	if (tile_is_blocked(DUNTILEAT(dun, x, y)))
 		return 0;
 
