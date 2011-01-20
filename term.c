@@ -17,6 +17,7 @@ static int bg = TERM_BLACK;
 
 static int get_char(void)
 {
+	int unused;
 	char ch = 0;
 	struct termios vt;
 
@@ -31,7 +32,7 @@ static int get_char(void)
 	vt.c_cc[VTIME] = 0;	/* Timeout in deciseconds 0 is infinite. */
 	tcsetattr(0, TCSANOW, &vt);
 
-	read(0, &ch, 1); /* 0 is stdin */
+	unused = read(0, &ch, 1); /* 0 is stdin */
 
 	/* Reset local modes. */
 	vt.c_lflag |= ICANON;

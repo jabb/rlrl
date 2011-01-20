@@ -184,7 +184,7 @@ struct combat_report
 combat_perform(struct creature *att, unsigned long act, struct creature *def)
 {
 	struct combat_report cr;
-
+	cr.damage = 0;
 	return cr;
 }
 

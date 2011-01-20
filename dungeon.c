@@ -51,60 +51,25 @@ int tile_is_opaque(struct tile t)
 
 void dir_delta(int dir, int *x, int *y)
 {
-	if (x) *x = 0;
-	if (y) *y = 0;
+	int deltas[DIR_COUNT][2] = {
+		/*x   y*/
+		{ 0, -1},
+		{ 0,  1},
+		{-1,  0},
+		{ 1,  0},
+		{-1, -1},
+		{ 1, -1},
+		{-1,  1},
+		{ 1,  1},
+	};
 
-	switch (dir) {
-	case DIR_UP:
-		if (y)
-			*y = -1;
-		break;
-
-	case DIR_DOWN:
-		if (y)
-			*y = 1;
-		break;
-
-	case DIR_LEFT:
-		if (x)
-			*x = -1;
-		break;
-
-	case DIR_RIGHT:
-		if (x)
-			*x = 1;
-		break;
-
-	case DIR_UPLEFT:
-		if (y)
-			*y = -1;
-		if (x)
-			*x = -1;
-		break;
-
-	case DIR_UPRIGHT:
-		if (y)
-			*y = -1;
-		if (x)
-			*x = 1;
-		break;
-
-	case DIR_DOWNLEFT:
-		if (y)
-			*y = 1;
-		if (x)
-			*x = -1;
-		break;
-
-	case DIR_DOWNRIGHT:
-		if (y)
-			*y = 1;
-		if (x)
-			*x = 1;
-		break;
-
-	default:
-		break;
+	if (dir >= 0 && dir < DIR_COUNT) {
+		*x = deltas[dir][0];
+		*y = deltas[dir][1];
+	}
+	else {
+		*x = 0;
+		*y = 0;
 	}
 }
 
