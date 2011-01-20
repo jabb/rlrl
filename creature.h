@@ -92,6 +92,7 @@ struct feature {
 #define CREATURE_FEATURES	10
 
 struct creature {
+	unsigned int fatigue;
 	struct glyph glyph;
 	struct body body;
 	unsigned long state;

@@ -54,10 +54,9 @@ int dungeon_height(struct dungeon *dun);
 
 int dungeon_in_bounds(struct dungeon *dun, int x, int y);
 int dungeon_walkable(struct dungeon *dun, int x, int y);
+
 struct creature *dungeon_creature_at(struct dungeon *dun, int x, int y);
-
 struct tile *dungeon_tile_at(struct dungeon *dun, int x, int y);
-
 struct creature_list *dungeon_creature_list(struct dungeon *dun);
 
 #endif

@@ -50,11 +50,13 @@ int main(void)
 	shell_add_cmd(sh, "rand", sh_rand);
 
 	shell_exec_line(sh, "map ` sh");
+	shell_exec_line(sh, "map ~ sh");
 	shell_exec_line(sh, "runfile init.rlc");
 
 	gm_connect_shell(sh);
 
-	shell_printf(sh, "Welcome to RLRL! Press ` to enter the shell.\n");
+	shell_printf(sh, "Welcome to RLRL!\n"
+			"Press ` or ~ to enter the shell.\n");
 
 	shell_flush(sh);
 	do {

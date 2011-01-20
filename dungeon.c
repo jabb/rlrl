@@ -292,9 +292,14 @@ int dungeon_walkable(struct dungeon *dun, int x, int y)
 
 struct creature *dungeon_creature_at(struct dungeon *dun, int x, int y)
 {
-	for (cl_begin(dun->list); !cl_end(dun->list); cl_next(dun->list)) {
-		if (cl_iter(dun->list)->x == x && cl_iter(dun->list)->y == y)
-			return &cl_iter(dun->list)->creature;
+	struct creature_node *iter;
+
+	iter = dun->list->head;
+
+	while (iter) {
+		if (iter->x == x && iter->y == y)
+			return &iter->creature;
+		iter = iter->next;
 	}
 	return NULL;
 }

@@ -10,6 +10,18 @@
 #include "shell.h"
 #include "term.h"
 
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define MIN(a, b) ((a) > (b) ? (b) : (a))
+#define ABS(a) ((a) < 0 ? (-(a)) : (a))
+
+#define CLAMP(a, min, max)	\
+do {				\
+	if (a < min)		\
+		a = min;	\
+	else if (a > max)	\
+		a = max;	\
+} while (0)
+
 struct dungeon *curdun = NULL;
 int curlvl = -1;
 
@@ -17,8 +29,9 @@ int px = 0;
 int py = 0;
 struct creature player;
 
-static void gm_descend(void);
-static void gm_draw(void);
+static void descend(void);
+static void draw(void);
+static void act(struct creature *c, int a, int *x, int *y, int dx, int dy);
 
 static int gm_move(struct shell *sh, int ac, char *av[]);
 static int gm_act(struct shell *sh, int ac, char *av[]);
@@ -29,7 +42,7 @@ int gm_init(void)
 {
 	creature_generate(&player);
 	curdun = dungeon_create(GM_PLAY_WIDTH, GM_PLAY_HEIGHT);
-	gm_descend();
+	descend();
 	return 0;
 }
 
@@ -46,17 +59,17 @@ void gm_connect_shell(struct shell *sh)
 	shell_add_cmd(sh, "dungeon", gm_dungeon);
 }
 
-static void gm_descend(void)
+static void descend(void)
 {
 	curlvl++;
 	dungeon_set_level(curdun, curlvl);
 	dungeon_generate(curdun);
 	dungeon_populate(curdun);
 	dungeon_get_home(curdun, &px, &py);
-	gm_draw();
+	draw();
 }
 
-static void gm_draw(void)
+static void draw(void)
 {
 	int x, y;
 	struct creature_node *iter;
@@ -80,6 +93,28 @@ static void gm_draw(void)
 	glyph_draw(px, py, glyph_create('@'));
 
 	term_flush();
+}
+
+static void act(struct creature *c, int a, int *x, int *y, int dx, int dy)
+{
+	int range = 1;
+	int capable_range = 1;
+	int test_x = dx * capable_range;
+	int test_y = dy * capable_range;
+	while (dungeon_walkable(curdun, *x + test_x, *y + test_y) &&
+		(*x + test_x != px || *y + test_y != py)) {
+
+		capable_range++;
+		test_x = dx * capable_range;
+		test_y = dy * capable_range;
+
+		if (capable_range > range)
+			break;
+	}
+	capable_range--;
+
+	*x += dx * capable_range;
+	*y += dy * capable_range;
 }
 
 static int gm_move(struct shell *sh, int ac, char *av[])
@@ -119,8 +154,8 @@ static int gm_move(struct shell *sh, int ac, char *av[])
 
 static int gm_act(struct shell *sh, int ac, char *av[])
 {
-	int dx = 0;
-	int dy = 0;
+	int dx;
+	int dy;
 	int dir;
 	int act_no;
 	char *tmp;
@@ -137,12 +172,7 @@ static int gm_act(struct shell *sh, int ac, char *av[])
 		return SHELL_SUCCESS;
 	}
 
-	/* Special case, action 0 is always move. */
-	if (act_no == 0) {
-		shell_exec_linef(sh, "move %s", av[2]);
-		return SHELL_SUCCESS;
-	}
-	else if (player.actions[act_no] == ACT_NONE) {
+	if (player.actions[act_no] == ACT_NONE) {
 		shell_printf(sh, "You don't have action %d!\n", act_no);
 		return SHELL_SUCCESS;
 	}
@@ -156,7 +186,11 @@ static int gm_act(struct shell *sh, int ac, char *av[])
 
 	dir_delta(dir, &dx, &dy);
 
-	/* TODO: Deal with act_no */
+	/* Now that we have all the information like action number and
+	 * direction...
+	 */
+
+	act(&player, act_no, &px, &py, dx, dy);
 
 	return SHELL_SUCCESS;
 }
@@ -164,6 +198,8 @@ static int gm_act(struct shell *sh, int ac, char *av[])
 
 static int gm_update(struct shell *sh, int ac, char *av[])
 {
+	int dx;
+	int dy;
 	struct creature_node *iter;
 	struct creature_list *cl;
 
@@ -171,9 +207,14 @@ static int gm_update(struct shell *sh, int ac, char *av[])
 
 	for (cl_begin(cl); !cl_end(cl); cl_next(cl)) {
 		iter = cl_iter(cl);
+		dx = px - iter->x;
+		dy = py - iter->y;
+		CLAMP(dx, -1, 1);
+		CLAMP(dy, -1, 1);
+		act(&iter->creature, 0, &iter->x, &iter->y, dx, dy);
 	}
 
-	gm_draw();
+	draw();
 	return SHELL_SUCCESS;
 }
 
