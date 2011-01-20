@@ -22,6 +22,8 @@ void shell_destroy(struct shell *sh);
 int shell_get_width(struct shell *sh);
 int shell_get_height(struct shell *sh);
 
+int shell_lines_written(struct shell *sh);
+
 int shell_add_cmd(struct shell *sh, const char *name, shell_cmd *fn);
 int shell_remove_cmd(struct shell *sh, const char *name);
 

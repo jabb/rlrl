@@ -50,7 +50,6 @@ int main(void)
 	shell_add_cmd(sh, "rand", sh_rand);
 
 	shell_exec_line(sh, "map ` sh");
-
 	shell_exec_line(sh, "runfile init.rlc");
 
 	gm_connect_shell(sh);
@@ -97,21 +96,38 @@ void main_exit(int code)
 
 int sh_map(struct shell *sh, int ac, char *av[])
 {
-	if (ac != 3) {
-		shell_puts(sh, "usage: map <char> \"<command>\"\n");
+	int force = 0;
+	int silent = 0;
+	int arg;
+
+	for (arg = 1; arg < ac; ++arg) {
+		if (strcmp(av[arg], "-f") == 0)
+			force = 1;
+		else if (strcmp(av[arg], "-s") == 0)
+			silent = 1;
+		else
+			break;
+	}
+
+	if (ac < arg + 2) {
+		shell_puts(sh, "usage: map <options?> <char> \"<command>\"\n");
 		shell_flush(sh);
 		return SHELL_SUCCESS;
 	}
 
-	if (av[1][0] >= 0 && av[1][0] < NUM_KEYBINDS) {
-		if (keybinds[(int)av[1][0]]) {
-			shell_printf(sh, "'%c' is already mapped!\n", av[1][0]);
+	if (av[arg][0] >= 0 && av[arg][0] < NUM_KEYBINDS) {
+		if (keybinds[(int)av[arg][0]] && !force) {
+			if (!silent)
+				shell_printf(sh, "'%c' is already mapped!\n",
+					av[arg][0]);
 			shell_flush(sh);
 			return SHELL_SUCCESS;
 		}
 		else {
-			keybinds[(int)av[1][0]] = mystrdup(av[2]);
-			shell_printf(sh, "'%c' successfully bound!\n", av[1][0]);
+			keybinds[(int)av[arg][0]] = mystrdup(av[arg + 1]);
+			if (!silent)
+				shell_printf(sh, "'%c' successfully bound!\n",
+					av[arg][0]);
 		}
 	}
 
@@ -139,14 +155,15 @@ int sh_unmap(struct shell *sh, int ac, char *av[])
 int sh_commands(struct shell *sh, int ac, char *av[])
 {
 	int i;
-	int lines = 0;
+	int lines = shell_lines_written(sh);
 
 	for (i = 0; i < NUM_KEYBINDS; ++i) {
 		if (keybinds[i]) {
 			shell_printf(sh, "'%c': \"%s\"\n", i, keybinds[i]);
-			if (lines >= shell_get_height(sh) - 1) {
+			if (shell_lines_written(sh) - lines >=
+				shell_get_height(sh) - 1) {
 				shell_exec_line(sh, "pause");
-				lines = 0;
+				lines = shell_lines_written(sh);
 			}
 		}
 	}

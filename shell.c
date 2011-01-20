@@ -40,6 +40,7 @@ struct shell {
 	int wr_col;
 	char **buf;
 
+	int wlines; /* Written lines. */
 	int entered;
 };
 
@@ -55,6 +56,7 @@ static void write_ch(struct shell *sh, int c)
 	if (sh->wr_col >= BUF_WIDTH(sh)) {
 		sh->wr_col = 0;
 		sh->wr_row++;
+		sh->wlines++;
 	}
 
 	if (sh->wr_row >= BUF_HEIGHT(sh)) {
@@ -70,6 +72,7 @@ static void write_ch(struct shell *sh, int c)
 			sh->buf[sh->wr_row][i] = ' ';
 		sh->wr_col = 0;
 		sh->wr_row++;
+		sh->wlines++;
 		break;
 	case '\t':
 		tmp = 4 - ((sh->wr_col + 1) % 4) + 1;
@@ -220,19 +223,20 @@ static int cmd_sh(struct shell *sh, int ac, char *av[])
 
 static int cmd_list(struct shell *sh, int ac, char *av[])
 {
-	int lines = 0;
+	int lines;
 	struct cmd *head = sh->cmds;
 
 	if (!head)
 		return SHELL_SUCCESS;
 
+	lines = shell_lines_written(sh);
 	do {
 		shell_printf(sh, "%s\n", head->name);
-		lines++;
 
-		if (lines >= shell_get_height(sh) - 1) {
+		if (shell_lines_written(sh) - lines >=
+			shell_get_height(sh) - 1) {
 			shell_exec_line(sh, "pause");
-			lines = 0;
+			lines = shell_lines_written(sh);
 		}
 
 		head = head->next;
@@ -275,6 +279,7 @@ struct shell *shell_create(int x, int y, int w, int h)
 			goto array_alloc_fail;
 	}
 
+	sh->wlines = 0;
 	sh->entered = 0;
 
 	clearbuf(sh);
@@ -320,6 +325,11 @@ int shell_get_width(struct shell *sh)
 int shell_get_height(struct shell *sh)
 {
 	return BUF_WIDTH(sh);
+}
+
+int shell_lines_written(struct shell *sh)
+{
+	return sh->wlines;
 }
 
 int shell_add_cmd(struct shell *sh, const char *name, shell_cmd *fn)

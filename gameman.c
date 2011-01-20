@@ -15,6 +15,7 @@ int curlvl = -1;
 
 int px = 0;
 int py = 0;
+struct creature player;
 
 static void gm_descend(void);
 static void gm_draw(void);
@@ -26,6 +27,7 @@ static int gm_dungeon(struct shell *sh, int ac, char *av[]);
 
 int gm_init(void)
 {
+	creature_generate(&player);
 	curdun = dungeon_create(GM_PLAY_WIDTH, GM_PLAY_HEIGHT);
 	gm_descend();
 	return 0;
@@ -138,6 +140,10 @@ static int gm_act(struct shell *sh, int ac, char *av[])
 	/* Special case, action 0 is always move. */
 	if (act_no == 0) {
 		shell_exec_linef(sh, "move %s", av[2]);
+		return SHELL_SUCCESS;
+	}
+	else if (player.actions[act_no] == ACT_NONE) {
+		shell_printf(sh, "You don't have action %d!\n", act_no);
 		return SHELL_SUCCESS;
 	}
 
