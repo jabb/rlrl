@@ -46,6 +46,11 @@ int dungeon_get_level(struct dungeon *dun);
 void dungeon_generate(struct dungeon *dun);
 void dungeon_populate(struct dungeon *dun);
 
+void dungeon_set_player_xy(struct dungeon *dun, int x, int y);
+void dungeon_get_player_xy(struct dungeon *dun, int *x, int *y);
+void dungeon_set_player(struct dungeon *dun, struct creature player);
+struct creature *dungeon_get_player(struct dungeon *dun);
+
 void dungeon_get_home(struct dungeon *dun, int *x, int *y);
 void dungeon_get_stairs(struct dungeon *dun, int *x, int *y);
 

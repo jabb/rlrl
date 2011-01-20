@@ -153,6 +153,9 @@ struct dungeon {
 	int home_y;
 	int stair_x;
 	int stair_y;
+	int player_x;
+	int player_y;
+	struct creature player;
 	struct creature_list *list;
 	struct tile tiles[];
 };
@@ -179,6 +182,11 @@ struct dungeon *dungeon_create(int width, int height)
 	dun->home_y = -1;
 	dun->stair_x = -1;
 	dun->stair_y = -1;
+	dun->player_x = -1;
+	dun->player_y = -1;
+	dun->player.glyph.sym = '@';
+	dun->player.glyph.fg = TERM_WHITE;
+	dun->player.glyph.bg = TERM_BLACK;
 
 	for (x = 0; x < width; ++x)
 		for (y = 0; y < height; ++y)
@@ -249,6 +257,28 @@ void dungeon_populate(struct dungeon *dun)
 	}
 }
 
+void dungeon_set_player_xy(struct dungeon *dun, int x, int y)
+{
+	dun->player_x = x;
+	dun->player_y = y;
+}
+
+void dungeon_get_player_xy(struct dungeon *dun, int *x, int *y)
+{
+	*x = dun->player_x;
+	*y = dun->player_y;
+}
+
+void dungeon_set_player(struct dungeon *dun, struct creature player)
+{
+	dun->player = player;
+}
+
+struct creature *dungeon_get_player(struct dungeon *dun)
+{
+	return &dun->player;
+}
+
 void dungeon_get_home(struct dungeon *dun, int *x, int *y)
 {
 	*x = dun->home_x;
@@ -281,9 +311,6 @@ int dungeon_walkable(struct dungeon *dun, int x, int y)
 	if (!dungeon_in_bounds(dun, x, y))
 		return 0;
 
-	if (dungeon_creature_at(dun, x, y))
-		return 0;
-
 	if (tile_is_blocked(DUNTILEAT(dun, x, y)))
 		return 0;
 
@@ -294,6 +321,9 @@ struct creature *dungeon_creature_at(struct dungeon *dun, int x, int y)
 {
 	struct creature_node *iter;
 
+	if (x == dun->player_x && y == dun->player_y)
+		return &dun->player;
+
 	iter = dun->list->head;
 
 	while (iter) {
@@ -301,6 +331,7 @@ struct creature *dungeon_creature_at(struct dungeon *dun, int x, int y)
 			return &iter->creature;
 		iter = iter->next;
 	}
+
 	return NULL;
 }
 

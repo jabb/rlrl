@@ -119,7 +119,7 @@ struct action_defn {
 
 struct action_defn action_tab[] = {
 	{0, 0, ACT_IS_NONE, 0, STATE_NONE, STATE_ALL, 0, STATE_NONE},
-	{0, 0, ACT_IS_MOVE, 0, STATE_NONE, STATE_ACTIVE, 0, STATE_NONE}
+	{0, 0, ACT_IS_MOVE, 1, STATE_NONE, STATE_ACTIVE, 0, STATE_NONE}
 };
 
 int act_does_damage(unsigned long act)

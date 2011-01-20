@@ -22,26 +22,31 @@ do {				\
 		a = max;	\
 } while (0)
 
-struct dungeon *curdun = NULL;
-int curlvl = -1;
-
-int px = 0;
-int py = 0;
-struct creature player;
+/******************************************************************************\
+ * Prototypes
+\******************************************************************************/
 
 static void descend(void);
 static void draw(void);
-static void act(struct creature *c, int a, int *x, int *y, int dx, int dy);
+struct creature *act_walk(unsigned long action, int *x, int *y, int dx, int dy);
 
 static int gm_move(struct shell *sh, int ac, char *av[]);
 static int gm_act(struct shell *sh, int ac, char *av[]);
 static int gm_update(struct shell *sh, int ac, char *av[]);
 static int gm_dungeon(struct shell *sh, int ac, char *av[]);
 
+/******************************************************************************\
+ * Management
+\******************************************************************************/
+
+struct dungeon *curdun = NULL;
+int curlvl = -1;
+
 int gm_init(void)
 {
-	creature_generate(&player);
 	curdun = dungeon_create(GM_PLAY_WIDTH, GM_PLAY_HEIGHT);
+	creature_generate(dungeon_get_player(curdun));
+	dungeon_set_player_xy(curdun, 0, 0);
 	descend();
 	return 0;
 }
@@ -59,13 +64,23 @@ void gm_connect_shell(struct shell *sh)
 	shell_add_cmd(sh, "dungeon", gm_dungeon);
 }
 
+/******************************************************************************\
+ * Dungeon-ey stuff, like pathfinding and combat.
+\******************************************************************************/
+
 static void descend(void)
 {
+	int tx, ty;
+
 	curlvl++;
 	dungeon_set_level(curdun, curlvl);
+
 	dungeon_generate(curdun);
 	dungeon_populate(curdun);
-	dungeon_get_home(curdun, &px, &py);
+
+	dungeon_get_home(curdun, &tx, &ty);
+	dungeon_set_player_xy(curdun, tx, ty);
+
 	draw();
 }
 
@@ -74,35 +89,51 @@ static void draw(void)
 	int x, y;
 	struct creature_node *iter;
 	struct creature_list *cl;
+	struct glyph glyph;
+	struct tile tile;
 
+	/* Draw all the tiles. */
 	for (x = 0; x < dungeon_width(curdun); ++x) {
 		for (y = 0; y < dungeon_height(curdun); ++y) {
-			glyph_draw(x, y,
-				tile_glyph(*dungeon_tile_at(curdun, x, y)));
+			tile = *dungeon_tile_at(curdun, x, y);
+			glyph = tile_glyph(tile);
+			glyph_draw(x, y, glyph);
 		}
 	}
 
+	/* Draw all the monsters. */
 	cl = dungeon_creature_list(curdun);
-
 	for (cl_begin(cl); !cl_end(cl); cl_next(cl)) {
 		iter = cl_iter(cl);
 		glyph_draw(iter->x, iter->y, iter->creature.glyph);
 	}
 
-
-	glyph_draw(px, py, glyph_create('@'));
+	/* Draw the player. */
+	dungeon_get_player_xy(curdun, &x, &y);
+	glyph_draw(x, y, dungeon_get_player(curdun)->glyph);
 
 	term_flush();
 }
 
-static void act(struct creature *c, int a, int *x, int *y, int dx, int dy)
+struct creature *act_walk(unsigned long action, int *x, int *y, int dx, int dy)
 {
-	int range = 1;
+	/* The creature that would be run into, if there is one. */
+	struct creature *end = NULL;
+	int range = act_range(action);
 	int capable_range = 1;
 	int test_x = dx * capable_range;
 	int test_y = dy * capable_range;
-	while (dungeon_walkable(curdun, *x + test_x, *y + test_y) &&
-		(*x + test_x != px || *y + test_y != py)) {
+
+	while (1) {
+		if (dungeon_creature_at(curdun, *x + test_x, *y + test_y)) {
+			end = dungeon_creature_at(curdun,
+				*x + test_x, *y + test_y);
+			break;
+		}
+
+		if (!dungeon_walkable(curdun, *x + test_x, *y + test_y)) {
+			break;
+		}
 
 		capable_range++;
 		test_x = dx * capable_range;
@@ -115,12 +146,16 @@ static void act(struct creature *c, int a, int *x, int *y, int dx, int dy)
 
 	*x += dx * capable_range;
 	*y += dy * capable_range;
+
+	return end;
 }
+
+/******************************************************************************\
+ * Shell Functions
+\******************************************************************************/
 
 static int gm_move(struct shell *sh, int ac, char *av[])
 {
-	int dx = 0;
-	int dy = 0;
 	int dir;
 
 	if (ac != 2) {
@@ -137,17 +172,7 @@ static int gm_move(struct shell *sh, int ac, char *av[])
 		return SHELL_SUCCESS;
 	}
 
-	dir_delta(dir, &dx, &dy);
-
-	if (dungeon_walkable(curdun, px + dx, py + dy)) {
-		term_cursor_move(px, py);
-		term_set_char(' ');
-
-		px += dx;
-		py += dy;
-
-		shell_exec_line(sh, "update");
-	}
+	shell_exec_linef(sh, "act %d %s", 0, av[1]);
 
 	return SHELL_SUCCESS;
 }
@@ -159,6 +184,12 @@ static int gm_act(struct shell *sh, int ac, char *av[])
 	int dir;
 	int act_no;
 	char *tmp;
+	struct creature *player = NULL;
+	int px;
+	int py;
+
+	player = dungeon_get_player(curdun);
+	dungeon_get_player_xy(curdun, &px, &py);
 
 	if (ac <= 2) {
 		shell_puts(sh, "usage: act <action_no> <direction>\n");
@@ -172,7 +203,7 @@ static int gm_act(struct shell *sh, int ac, char *av[])
 		return SHELL_SUCCESS;
 	}
 
-	if (player.actions[act_no] == ACT_NONE) {
+	if (player->actions[act_no] == ACT_NONE) {
 		shell_printf(sh, "You don't have action %d!\n", act_no);
 		return SHELL_SUCCESS;
 	}
@@ -190,7 +221,10 @@ static int gm_act(struct shell *sh, int ac, char *av[])
 	 * direction...
 	 */
 
-	act(&player, act_no, &px, &py, dx, dy);
+	act_walk(player->actions[act_no], &px, &py, dx, dy);
+	dungeon_set_player_xy(curdun, px, py);
+
+	shell_exec_line(sh, "update");
 
 	return SHELL_SUCCESS;
 }
@@ -200,18 +234,22 @@ static int gm_update(struct shell *sh, int ac, char *av[])
 {
 	int dx;
 	int dy;
+	int px;
+	int py;
 	struct creature_node *iter;
 	struct creature_list *cl;
 
-	cl = dungeon_creature_list(curdun);
+	dungeon_get_player_xy(curdun, &px, &py);
 
+	cl = dungeon_creature_list(curdun);
 	for (cl_begin(cl); !cl_end(cl); cl_next(cl)) {
 		iter = cl_iter(cl);
+		/* Pathfinding goes here. Currently very sucky. */
 		dx = px - iter->x;
 		dy = py - iter->y;
 		CLAMP(dx, -1, 1);
 		CLAMP(dy, -1, 1);
-		act(&iter->creature, 0, &iter->x, &iter->y, dx, dy);
+		act_walk(iter->creature.actions[0], &iter->x, &iter->y, dx, dy);
 	}
 
 	draw();
@@ -222,4 +260,3 @@ static int gm_dungeon(struct shell *sh, int ac, char *av[])
 {
 	return SHELL_SUCCESS;
 }
-
