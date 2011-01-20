@@ -1,4 +1,6 @@
 
+#ifndef TERM_CURSES
+
 #include "term.h"
 
 #include <ctype.h>
@@ -198,12 +200,10 @@ int term_set_foreground(int c)
 int term_set_background(int c)
 {
 	term_set_attribute(bg + 40, 0);
-	/* This is to make it so black is the default background for a
-	 * terminal. */
-	if (c != TERM_BLACK) {
-		bg = c;
-		term_set_attribute(bg + 40, 1);
-	}
+
+	bg = c;
+	term_set_attribute(bg + 40, 1);
+
 	return 0;
 }
 
@@ -293,3 +293,162 @@ int term_get_string(char *buf, int len)
 
 	return 0;
 }
+
+#else
+
+#include "term.h"
+
+#include <curses.h>
+
+#define TERM_COLORS	8
+
+static int fg = TERM_WHITE;
+static int bg = TERM_BLACK;
+static int tx = 0;
+static int ty = 0;
+
+int term_open(void)
+{
+	int f, b;
+	initscr();
+	noecho();
+	start_color();
+
+	for (f = 0; f < TERM_COLORS; ++f) {
+		for (b = 0; b < TERM_COLORS; ++b) {
+			init_pair(f * TERM_COLORS + b, f, b);
+		}
+	}
+
+	return 0;
+}
+
+int term_close(void)
+{
+	endwin();
+	return 0;
+}
+
+int term_width(void)
+{
+	return COLS;
+}
+
+int term_height(void)
+{
+	return LINES;
+}
+
+int term_clear(void)
+{
+	return clear();
+}
+
+int term_clear_line(void)
+{
+	tx = 0;
+	move(ty, tx);
+	return clrtoeol();
+}
+
+int term_cursor_move(int x, int y)
+{
+	tx = x;
+	ty = y;
+	return move(y, x);
+}
+
+int term_cursor_show(int yes)
+{
+	return curs_set(yes);
+}
+
+int term_cursor_up(int by)
+{
+	ty--;
+	return move(ty, tx);
+}
+
+int term_cursor_down(int by)
+{
+	ty++;
+	return move(ty, tx);
+}
+
+int term_cursor_right(int by)
+{
+	tx--;
+	return move(ty, tx);
+}
+
+int term_cursor_left(int by)
+{
+	tx++;
+	return move(ty, tx);
+}
+
+int term_get_foreground(void)
+{
+	return fg;
+}
+
+int term_get_background(void)
+{
+	return bg;
+}
+
+int term_set_attribute(int attr, int yes)
+{
+	unsigned int tab[] = {
+		A_NORMAL, A_BOLD, A_DIM, 0, A_UNDERLINE,
+		A_BLINK, 0, A_REVERSE, A_INVIS
+	};
+	if (yes)
+		return attron(tab[attr]);
+	else
+		return attroff(tab[attr]);
+}
+
+int term_set_foreground(int c)
+{
+	fg = c;
+	return attron(COLOR_PAIR(fg * TERM_COLORS + bg));
+}
+
+int term_set_background(int c)
+{
+	bg = c;
+	return attron(COLOR_PAIR(fg * TERM_COLORS + bg));
+}
+
+int term_set_char(int c)
+{
+	return addch(c);
+}
+
+int term_set_string(const char *str)
+{
+	return addstr(str);
+}
+
+int term_flush(void)
+{
+	return refresh();
+}
+
+int term_get_char(void)
+{
+	return getch();
+}
+
+
+int term_get_string(char *buf, int len)
+{
+	int rv;
+	echo();
+	rv = getnstr(buf, len);
+	noecho();
+	return rv;
+}
+
+#endif

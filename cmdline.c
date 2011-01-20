@@ -62,7 +62,7 @@ static const char *parse_quotes(struct word **words, const char *str)
 	newword->next = NULL;
 	newword->str = calloc(count, sizeof(char));
 
-	/* -1 to eat the ] and to leave room for a null char */
+	/* -1 to eat the " and to leave room for a null char */
 	strncpy(newword->str, str, count - 1);
 	newword->str[count - 1] = '\0';
 
@@ -90,7 +90,7 @@ static const char *parse_word(struct word **words, const char *str)
 	newword->next = NULL;
 	newword->str = calloc(count, sizeof(char));
 
-	/* -1 to eat the ] and to leave room for a null char */
+	/* -1 to leave room for a null char */
 	strncpy(newword->str, str, count - 1);
 	newword->str[count - 1] = '\0';
 
