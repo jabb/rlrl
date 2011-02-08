@@ -14,7 +14,7 @@ all: $(BINARY)
 release: CFLAGS += -s -O2
 release: $(BINARY)
 
-curses: CFLAGS += -DTERM_CURSES
+curses: CFLAGS += -DTERM_CURSES -g
 curses: LDFLAGS += -lcurses
 curses: $(BINARY)
 

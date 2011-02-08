@@ -15,5 +15,11 @@ some terminals (I suggest rxvt or xterm!).
 Without curses:
 make clean; make
 
+Without curses release build:
+make clean; make release
+
 With curses:
 make clean; make curses
+
+With curses release build:
+make clean; make curses-release

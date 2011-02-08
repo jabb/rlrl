@@ -30,6 +30,7 @@ static void descend(void);
 static void draw(void);
 struct creature *act_walk(unsigned long action, int *x, int *y, int dx, int dy);
 
+static int gm_interact(struct shell *sh, int ac, char *av[]);
 static int gm_move(struct shell *sh, int ac, char *av[]);
 static int gm_act(struct shell *sh, int ac, char *av[]);
 static int gm_update(struct shell *sh, int ac, char *av[]);
@@ -58,6 +59,7 @@ void gm_exit(void)
 
 void gm_connect_shell(struct shell *sh)
 {
+	shell_add_cmd(sh, "interact", gm_interact);
 	shell_add_cmd(sh, "move", gm_move);
 	shell_add_cmd(sh, "act", gm_act);
 	shell_add_cmd(sh, "update", gm_update);
@@ -153,6 +155,18 @@ struct creature *act_walk(unsigned long action, int *x, int *y, int dx, int dy)
 /******************************************************************************\
  * Shell Functions
 \******************************************************************************/
+
+static int gm_interact(struct shell *sh, int ac, char *av[])
+{
+	int px, py, sx, sy;
+	dungeon_get_player_xy(curdun, &px, &py);
+	dungeon_get_stairs(curdun, &sx, &sy);
+	if (px == sx && py == sy) {
+		descend();
+	}
+	shell_printf(sh, "Interacted! %d, %d -> %d, %d\n", px, py, sx, sy);
+	return SHELL_SUCCESS;
+}
 
 static int gm_move(struct shell *sh, int ac, char *av[])
 {

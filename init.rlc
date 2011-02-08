@@ -14,6 +14,9 @@ map u "move up-right"
 map b "move down-left"
 map n "move down-right"
 
+# Interaction
+map " " "interact"
+
 map . update
 map r "rand range 1 6"
 
